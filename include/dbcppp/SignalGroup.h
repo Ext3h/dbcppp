@@ -5,6 +5,7 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include <cstdint>
 
 #include "Export.h"
 #include "Iterator.h"

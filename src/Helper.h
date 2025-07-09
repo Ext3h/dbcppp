@@ -40,6 +40,8 @@
 #   include <byteswap.h>
 #endif
 
+#include <cstdint>
+
 namespace dbcppp
 {
     class NodeImpl;
