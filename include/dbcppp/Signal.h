@@ -25,8 +25,7 @@ namespace dbcppp
             MaschinesFloatEncodingNotSupported = 1,
             MaschinesDoubleEncodingNotSupported = 2,
             SignalExceedsMessageSize = 4,
-            WrongBitSizeForExtendedDataType = 8,
-            ConflictingMultiplexDefinition = 16,
+            WrongBitSizeForExtendedDataType = 8
         };
         enum class EMultiplexer
         {
@@ -136,11 +135,11 @@ namespace dbcppp
         DBCPPP_MAKE_ITERABLE(ISignal, ValueEncodingDescriptions, IValueEncodingDescription);
         DBCPPP_MAKE_ITERABLE(ISignal, AttributeValues, IAttribute);
 
-        /// \brief Mapping of this multiplexed signal to specific value ranges of a selected multiplexor switch signal.
+        /// \brief Mapping of this multiplexed signal to specific value ranges of a selected multiplexor switch signals.
         /// 
-        /// In a valid DBC, this can only have 0 or 1 entries.
         /// Requires EMultiplexer::MuxValue to be set in MultiplexerIndicator in order to be valid.
         /// If empty, simple multiplexing rules by ISignal::MultiplexerSwitchValue and IMessage::MuxSignal apply instead.
+        /// If not empty, all listed multiplexor signals must match the specified value ranges simultaniously.
         DBCPPP_MAKE_ITERABLE(ISignal, SignalMultiplexerValues, ISignalMultiplexerValue);
 
     protected:
