@@ -25,11 +25,17 @@ namespace dbcppp
             MaschinesFloatEncodingNotSupported = 1,
             MaschinesDoubleEncodingNotSupported = 2,
             SignalExceedsMessageSize = 4,
-            WrongBitSizeForExtendedDataType = 8
+            WrongBitSizeForExtendedDataType = 8,
+            ConflictingMultiplexDefinition = 16,
         };
         enum class EMultiplexer
         {
-            NoMux, MuxSwitch, MuxValue
+            NoMux,
+            MuxSwitch = 1,
+            MuxValue = 2,
+            // For advanced multiplexing with ISignalMultiplexerValue, nesting is possible.
+            // This results in signals being both a multiplexor switch and a multiplexed value.
+            MuxSwitchAndValue = MuxSwitch | MuxValue
         };
         enum class EByteOrder
         {
@@ -44,7 +50,7 @@ namespace dbcppp
         {
             Integer, Float, Double
         };
-        
+
         static std::unique_ptr<ISignal> Create(
               uint64_t message_size
             , std::string&& name
@@ -65,13 +71,21 @@ namespace dbcppp
             , std::string&& comment
             , EExtendedValueType extended_value_type
             , std::vector<std::unique_ptr<ISignalMultiplexerValue>>&& signal_multiplexer_values);
-            
+
         virtual std::unique_ptr<ISignal> Clone() const = 0;
 
         virtual ~ISignal() = default;
         virtual const std::string& Name() const = 0;
         virtual EMultiplexer MultiplexerIndicator() const = 0;
+        /// \brief Single multiplexor value for simple multiplexing.
+        ///
+        /// Invalid if ISignal::SignalMultiplexerValues is not empty.
         virtual uint64_t MultiplexerSwitchValue() const = 0;
+        /// \brief Least significant bit of the signal.
+        ///
+        /// \note DBC uses the least signficant bit as start bit for both big and little endian.
+        ///       This means that for big endian, the StartBit points into the highest byte.
+        ///       This differs from FIBEX/Autosar where big endian signals are instead using the least significant bit in the lowest byte as offset.
         virtual uint64_t StartBit() const = 0;
         virtual uint64_t BitSize() const = 0;
         virtual EByteOrder ByteOrder() const = 0;
@@ -121,6 +135,12 @@ namespace dbcppp
         DBCPPP_MAKE_ITERABLE(ISignal, Receivers, std::string);
         DBCPPP_MAKE_ITERABLE(ISignal, ValueEncodingDescriptions, IValueEncodingDescription);
         DBCPPP_MAKE_ITERABLE(ISignal, AttributeValues, IAttribute);
+
+        /// \brief Mapping of this multiplexed signal to specific value ranges of a selected multiplexor switch signal.
+        /// 
+        /// In a valid DBC, this can only have 0 or 1 entries.
+        /// Requires EMultiplexer::MuxValue to be set in MultiplexerIndicator in order to be valid.
+        /// If empty, simple multiplexing rules by ISignal::MultiplexerSwitchValue and IMessage::MuxSignal apply instead.
         DBCPPP_MAKE_ITERABLE(ISignal, SignalMultiplexerValues, ISignalMultiplexerValue);
 
     protected:

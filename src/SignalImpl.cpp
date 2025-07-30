@@ -517,6 +517,22 @@ SignalImpl::SignalImpl(
         _phys_to_raw = ::phys_to_raw<double>;
         break;
     }
+    // Permitted due to faulty interface design in ISignal only - doesn't happen with real DBC files.
+    if (_signal_multiplexer_values.size() > 1)
+    {
+        SetError(EErrorCode::ConflictingMultiplexDefinition);
+    }
+    else if (_signal_multiplexer_values.size() == 1)
+    {
+        const auto ranges = _signal_multiplexer_values[0].ValueRanges();
+        if (!std::any_of(std::begin(ranges), std::end(ranges), [&](const ISignalMultiplexerValue::Range& range) -> bool
+            {
+                return range.from <= _multiplexer_switch_value && range.to >= _multiplexer_switch_value;
+            }))
+        {
+            SetError(EErrorCode::ConflictingMultiplexDefinition);
+        }
+    }
 }
 std::unique_ptr<ISignal> SignalImpl::Clone() const
 {
@@ -612,11 +628,11 @@ uint64_t SignalImpl::SignalMultiplexerValues_Size() const
 }
 bool SignalImpl::Error(EErrorCode code) const
 {
-    return code == _error || (uint64_t(_error) & uint64_t(code));
+    return code == _error || (std::underlying_type_t<EErrorCode>(_error) & std::underlying_type_t<EErrorCode>(code));
 }
 void SignalImpl::SetError(EErrorCode code)
 {
-    _error = EErrorCode(uint64_t(_error) | uint64_t(code));
+    _error = EErrorCode(std::underlying_type_t<EErrorCode>(_error) | std::underlying_type_t<EErrorCode>(code));
 }
 bool SignalImpl::operator==(const ISignal& rhs) const
 {
