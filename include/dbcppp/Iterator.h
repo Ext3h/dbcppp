@@ -1,8 +1,6 @@
-
 #pragma once
 
-#include <functional>
-#include <optional>
+#include <iterator>
 
 namespace dbcppp
 {
