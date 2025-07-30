@@ -2,101 +2,118 @@
 #pragma once
 
 #include <functional>
+#include <optional>
 
 namespace dbcppp
 {
-    template <class T>
-    class Iterator
+    template <class T, class P, typename F>
+    class Iterator final
     {
     public:
-        using self_t            = Iterator<T>;
+        using self_t            = Iterator<T, P, F>;
         using iterator_category = std::random_access_iterator_tag;
         using difference_type   = std::ptrdiff_t;
         using value_type        = T;
-        using pointer           = const value_type*;
-        using reference         = const value_type&;
-        using get_t             = std::function<reference (std::size_t)>;
+        using pointer           = value_type*;
+        using reference         = value_type&;
 
-        Iterator(get_t get, std::size_t i)
-            : _get(get)
+        constexpr Iterator(P parent, F get, std::size_t i) noexcept
+            : _parent(parent)
+            , _get(std::move(get))
             , _i(i)
         {}
-        reference operator*() const
+        inline reference operator*() const
         {
-            return _get(_i);
+            return (_parent->*_get)(_i);
         }
-        pointer operator->() const
+        inline pointer operator->() const
         {
-            return &_get(_i);
+            return &(_parent->*_get)(_i);
         }
-        self_t& operator++()
+        constexpr self_t& operator++() noexcept
         {
             _i++;
             return *this;
         }
-        self_t operator+(std::size_t o)
+        constexpr self_t operator+(std::size_t o) const noexcept
         {
-            return {_get, _i + o};
+            return {_parent, _get, _i + o};
         }
-        self_t operator-(std::size_t o)
+        constexpr self_t operator-(std::size_t o) const noexcept
         {
-            return {_get, _i + o};
+            return {_parent, _get, _i - o};
         }
-        difference_type operator-(const self_t& rhs)
+        constexpr difference_type operator-(const self_t& rhs) const noexcept
         {
             return _i - rhs._i;
         }
-        self_t& operator+=(std::size_t o)
+        constexpr self_t& operator+=(std::size_t o) noexcept
         {
             _i += o;
             return *this;
         }
-        self_t& operator-=(std::size_t o)
+        constexpr self_t& operator-=(std::size_t o) noexcept
         {
             _i -= o;
             return *this;
         }
 
-        bool operator==(const self_t& rhs) const
+        constexpr bool operator==(const self_t& rhs) const noexcept
         {
             return _i == rhs._i;
         }
-        bool operator!=(const self_t& rhs) const
+        constexpr bool operator!=(const self_t& rhs) const noexcept
         {
             return !(*this == rhs);
         }
 
     private:
-        get_t _get;
+        P _parent;
+        F _get;
         std::size_t _i;
     };
-    template <class Iterator>
-    class Iterable
+    template<class T, class P, typename F>
+    class Iterable final
     {
     public:
-        Iterable(Iterator begin, Iterator end)
-            : _begin(begin)
-            , _end(end)
+        using value_type = const T;
+        using reference = value_type&;
+        using const_reference = const value_type&;
+        using iterator = Iterator<T, P, F>;
+        using const_iterator = Iterator<const T, P, F>;
+        using difference_type = std::ptrdiff_t;
+        using size_type = std::size_t;
+
+        constexpr Iterable(P parent, F get, size_t size) noexcept
+            : _parent(std::move(parent))
+            , _get(std::move(get))
+            , _size(std::move(size))
         {}
-        Iterator& begin()
+        constexpr iterator begin() noexcept
         {
-            return _begin;
+            return iterator(_parent, _get, 0);
         }
-        Iterator& end()
+        constexpr iterator end() noexcept
         {
-            return _end;
+            return iterator(_parent, _get, _size);
+        }
+        constexpr const_iterator begin() const noexcept
+        {
+            return const_iterator(_parent, _get, 0);
+        }
+        constexpr const_iterator end() const noexcept
+        {
+            return const_iterator(_parent, _get, _size);
         }
 
     private:
-        Iterator _begin;
-        Iterator _end;
+        P _parent;
+        F _get;
+        size_t _size;
     };
 }
-#define DBCPPP_MAKE_ITERABLE(ClassName, Name, Type)                                 \
-    auto Name() const                                                               \
-    {                                                                               \
-        auto get = std::bind(&ClassName::Name##_Get, this, std::placeholders::_1);  \
-        Iterator<Type> begin(get, 0);                                               \
-        Iterator<Type> end(get, Name##_Size());                                     \
-        return Iterable(begin, end);                                                \
+#define DBCPPP_MAKE_ITERABLE(ClassName, Name, Type)                                                       \
+    inline Iterable<const Type, const ClassName*, decltype(&ClassName::Name##_Get)> Name() const noexcept \
+    {                                                                                                     \
+        return {this, &ClassName::Name##_Get, Name##_Size()};                                             \
     }
