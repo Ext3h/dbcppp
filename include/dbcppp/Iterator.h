@@ -28,10 +28,31 @@ namespace dbcppp
         {
             return &(_parent->*_get)(_i);
         }
+        inline reference operator[](std::size_t o) const
+        {
+            return *(*this + o);
+        }
         constexpr self_t& operator++() noexcept
         {
-            _i++;
+            ++_i;
             return *this;
+        }
+        constexpr self_t& operator--() noexcept
+        {
+            --_i;
+            return *this;
+        }
+        constexpr self_t operator++(int) noexcept
+        {
+            self_t old = *this;
+            ++_i;
+            return std::move(old);
+        }
+        constexpr self_t operator--(int) noexcept
+        {
+            self_t old = *this;
+            --_i;
+            return std::move(old);
         }
         constexpr self_t operator+(std::size_t o) const noexcept
         {
@@ -64,6 +85,22 @@ namespace dbcppp
         {
             return !(*this == rhs);
         }
+        constexpr bool operator<(const self_t& rhs) const noexcept
+        {
+            return _i < rhs._i;
+        }
+        constexpr bool operator>(const self_t& rhs) const noexcept
+        {
+            return _i > rhs._i;
+        }
+        constexpr bool operator<=(const self_t& rhs) const noexcept
+        {
+            return _i <= rhs._i;
+        }
+        constexpr bool operator>=(const self_t& rhs) const noexcept
+        {
+            return _i >= rhs._i;
+        }
 
     private:
         P _parent;
@@ -87,6 +124,10 @@ namespace dbcppp
             , _get(std::move(get))
             , _size(std::move(size))
         {}
+        inline reference operator[](std::size_t o) const
+        {
+            return (_parent->*_get)(o);
+        }
         constexpr iterator begin() noexcept
         {
             return iterator(_parent, _get, 0);
@@ -95,13 +136,29 @@ namespace dbcppp
         {
             return iterator(_parent, _get, _size);
         }
-        constexpr const_iterator begin() const noexcept
+        constexpr const_iterator cbegin() const noexcept
         {
             return const_iterator(_parent, _get, 0);
         }
-        constexpr const_iterator end() const noexcept
+        constexpr const_iterator cend() const noexcept
         {
             return const_iterator(_parent, _get, _size);
+        }
+        constexpr const_iterator begin() const noexcept
+        {
+            return cbegin();
+        }
+        constexpr const_iterator end() const noexcept
+        {
+            return cend();
+        }
+        constexpr size_type size() const noexcept
+        {
+            return _size;
+        }
+        constexpr bool empty() const noexcept
+        {
+            return _size == 0;
         }
 
     private:
