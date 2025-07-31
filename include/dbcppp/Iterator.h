@@ -15,20 +15,20 @@ namespace dbcppp
         using pointer           = value_type*;
         using reference         = value_type&;
 
-        constexpr Iterator(P parent, F get, std::size_t i) noexcept
+        constexpr Iterator(P parent, F get, difference_type i) noexcept
             : _parent(parent)
             , _get(std::move(get))
             , _i(i)
         {}
         inline reference operator*() const
         {
-            return (_parent->*_get)(_i);
+            return (_parent->*_get)(static_cast<size_t>(_i));
         }
         inline pointer operator->() const
         {
-            return &(_parent->*_get)(_i);
+            return &(_parent->*_get)(static_cast<size_t>(_i));
         }
-        inline reference operator[](std::size_t o) const
+        inline reference operator[](difference_type o) const
         {
             return *(*this + o);
         }
@@ -54,11 +54,11 @@ namespace dbcppp
             --_i;
             return std::move(old);
         }
-        constexpr self_t operator+(std::size_t o) const noexcept
+        constexpr self_t operator+(difference_type o) const noexcept
         {
             return {_parent, _get, _i + o};
         }
-        constexpr self_t operator-(std::size_t o) const noexcept
+        constexpr self_t operator-(difference_type o) const noexcept
         {
             return {_parent, _get, _i - o};
         }
@@ -66,12 +66,12 @@ namespace dbcppp
         {
             return _i - rhs._i;
         }
-        constexpr self_t& operator+=(std::size_t o) noexcept
+        constexpr self_t& operator+=(difference_type o) noexcept
         {
             _i += o;
             return *this;
         }
-        constexpr self_t& operator-=(std::size_t o) noexcept
+        constexpr self_t& operator-=(difference_type o) noexcept
         {
             _i -= o;
             return *this;
@@ -105,7 +105,7 @@ namespace dbcppp
     private:
         P _parent;
         F _get;
-        std::size_t _i;
+        difference_type _i;
     };
     template<class T, class P, typename F>
     class Iterable final
@@ -142,7 +142,7 @@ namespace dbcppp
         }
         constexpr const_iterator cend() const noexcept
         {
-            return const_iterator(_parent, _get, _size);
+            return const_iterator(_parent, _get, static_cast<difference_type>(_size));
         }
         constexpr const_iterator begin() const noexcept
         {
